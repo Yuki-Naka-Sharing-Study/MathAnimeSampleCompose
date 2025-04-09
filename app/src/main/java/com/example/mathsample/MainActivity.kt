@@ -3,63 +3,68 @@ package com.example.mathsample
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.Canvas
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import kotlin.math.cos
-import kotlin.math.sin
+import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            RegularPolygon()
+            FibonacciAnimation()
         }
     }
 }
 
 @Composable
-fun RegularPolygon() {
-    var sides by remember { mutableIntStateOf(3) }
+fun FibonacciAnimation() {
+    val fibonacciNumbers = remember { mutableStateListOf(0, 1) }
+    val scope = rememberCoroutineScope()
 
-    // 正多角形の内角の計算
-    val interiorAngle = (sides - 2) * 180f / sides
-
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Text("正多角形の内角")
-
-        // 辺の数のスライダー
-        Slider(value = sides.toFloat(), onValueChange = { sides = it.toInt() }, valueRange = 3f..10f, steps = 7, modifier = Modifier.fillMaxWidth())
-        Text("辺の数: $sides")
-
-        // 内角の表示
-        Text("内角: $interiorAngle°")
-
-        // 正多角形の描画
-        Canvas(modifier = Modifier.fillMaxSize().height(300.dp)) {
-            val width = size.width
-            val height = size.height
-            val centerX = width / 2
-            val centerY = height / 2
-            val radius = 100f
-            val angleStep = 360f / sides
-            val path = Path().apply {
-                moveTo(centerX + radius, centerY)
-                for (i in 1 until sides) {
-                    val angle = Math.toRadians(angleStep * i.toDouble()).toFloat()
-                    lineTo(centerX + radius * cos(angle.toDouble()).toFloat(), centerY + radius * sin(
-                        angle.toDouble()
-                    ).toFloat())
-                }
-                close()
+    LaunchedEffect(Unit) {
+        scope.launch {
+            for (i in 2..10) {
+                delay(1000) // 1秒ごとに追加
+                val nextValue = fibonacciNumbers[i - 1] + fibonacciNumbers[i - 2]
+                fibonacciNumbers.add(nextValue)
             }
-            drawPath(path, color = Color.Blue, style = Stroke(width = 2f))
         }
     }
+
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        fibonacciNumbers.forEachIndexed { index, number ->
+            AnimatedNumber(number, index)
+        }
+    }
+}
+
+@Composable
+fun AnimatedNumber(number: Int, index: Int) {
+    val animatedValue = remember { Animatable(0f) }
+
+    LaunchedEffect(number) {
+        animatedValue.animateTo(number.toFloat(), animationSpec = tween(1000))
+    }
+
+    Text(
+        text = "F(${index}) = ${animatedValue.value.toInt()}",
+        fontSize = 24.sp,
+        fontWeight = FontWeight.Bold,
+        color = Color.Blue,
+        modifier = Modifier.padding(8.dp)
+    )
 }
