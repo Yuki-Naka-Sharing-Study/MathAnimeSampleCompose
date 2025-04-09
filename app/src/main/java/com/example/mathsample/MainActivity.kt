@@ -3,63 +3,133 @@ package com.example.mathsample
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.unit.dp
-import kotlin.math.cos
-import kotlin.math.sin
+import androidx.constraintlayout.compose.ConstraintSet
+import androidx.constraintlayout.compose.ExperimentalMotionApi
+import androidx.constraintlayout.compose.MotionLayout
+import com.example.mathsample.ui.theme.MathSampleTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
         setContent {
-            RegularPolygon()
+            MathSampleTheme {
+                DifferentiationAnimation()
+            }
         }
     }
 }
 
+@OptIn(ExperimentalMotionApi::class)
 @Composable
-fun RegularPolygon() {
-    var sides by remember { mutableIntStateOf(3) }
+fun DifferentiationAnimation() {
+    val progress = remember { Animatable(0f) }
 
-    // 正多角形の内角の計算
-    val interiorAngle = (sides - 2) * 180f / sides
+    // アニメーションを制御
+    LaunchedEffect(Unit) {
+        progress.animateTo(1f, animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 4000, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ))
+    }
 
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Text("正多角形の内角")
-
-        // 辺の数のスライダー
-        Slider(value = sides.toFloat(), onValueChange = { sides = it.toInt() }, valueRange = 3f..10f, steps = 7, modifier = Modifier.fillMaxWidth())
-        Text("辺の数: $sides")
-
-        // 内角の表示
-        Text("内角: $interiorAngle°")
-
-        // 正多角形の描画
-        Canvas(modifier = Modifier.fillMaxSize().height(300.dp)) {
+    MotionLayout(
+        start = ConstraintSet {
+            val point = createRefFor("point")
+            constrain(point) {
+                start.linkTo(parent.start)
+                top.linkTo(parent.top)
+            }
+        },
+        end = ConstraintSet {
+            val point = createRefFor("point")
+            constrain(point) {
+                end.linkTo(parent.end)
+                top.linkTo(parent.top)
+            }
+        },
+        progress = progress.value,
+        modifier = Modifier.fillMaxSize()
+    ) {
+        // グラフを描画
+        Canvas(modifier = Modifier.fillMaxSize()) {
             val width = size.width
             val height = size.height
             val centerX = width / 2
             val centerY = height / 2
-            val radius = 100f
-            val angleStep = 360f / sides
-            val path = Path().apply {
-                moveTo(centerX + radius, centerY)
-                for (i in 1 until sides) {
-                    val angle = Math.toRadians(angleStep * i.toDouble()).toFloat()
-                    lineTo(centerX + radius * cos(angle.toDouble()).toFloat(), centerY + radius * sin(
-                        angle.toDouble()
-                    ).toFloat())
-                }
-                close()
+            val scale = width / 10
+
+            drawLine(
+                color = Color.Gray,
+                start = Offset(0f, centerY),
+                end = Offset(width, centerY),
+                strokeWidth = 2f
+            )
+
+            drawLine(
+                color = Color.Gray,
+                start = Offset(centerX, 0f),
+                end = Offset(centerX, height),
+                strokeWidth = 2f
+            )
+
+            for (x in -5..5) {
+                val x1 = x.toFloat()
+                val y1 = x1 * x1
+                val x2 = (x1 + 0.1f)
+                val y2 = x2 * x2
+
+                drawLine(
+                    color = Color.Blue,
+                    start = Offset(centerX + x1 * scale, centerY - y1 * scale),
+                    end = Offset(centerX + x2 * scale, centerY - y2 * scale),
+                    strokeWidth = 4f
+                )
             }
-            drawPath(path, color = Color.Blue, style = Stroke(width = 2f))
+        }
+
+        // 接線の動き
+        val x = progress.value * 5f - 2.5f
+        val y = x * x
+        val slope = 2 * x
+        val tangentStartX = x - 1f
+        val tangentEndX = x + 1f
+        val tangentStartY = y + slope * (tangentStartX - x)
+        val tangentEndY = y + slope * (tangentEndX - x)
+
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val width = size.width
+            val height = size.height
+            val centerX = width / 2
+            val centerY = height / 2
+            val scale = width / 10
+
+            drawLine(
+                color = Color.Red,
+                start = Offset(centerX + tangentStartX * scale, centerY - tangentStartY * scale),
+                end = Offset(centerX + tangentEndX * scale, centerY - tangentEndY * scale),
+                strokeWidth = 4f
+            )
+
+            drawCircle(
+                color = Color.Red,
+                center = Offset(centerX + x * scale, centerY - y * scale),
+                radius = 10f
+            )
         }
     }
 }
