@@ -8,58 +8,86 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
-import kotlin.math.cos
-import kotlin.math.sin
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            RegularPolygon()
+            LinearAlgebraVisualizer()
         }
     }
 }
 
 @Composable
-fun RegularPolygon() {
-    var sides by remember { mutableIntStateOf(3) }
+fun LinearAlgebraVisualizer() {
+    var angle by remember { mutableFloatStateOf(0f) }  // 回転角度（度数法）
+    var scaleX by remember { mutableFloatStateOf(1f) } // X軸のスケール
+    var scaleY by remember { mutableFloatStateOf(1f) } // Y軸のスケール
 
-    // 正多角形の内角の計算
-    val interiorAngle = (sides - 2) * 180f / sides
+    Column(
+        modifier = Modifier.fillMaxSize().padding(16.dp)
+    ) {
+        Text("線形代数：行列変換の視覚化", style = MaterialTheme.typography.headlineSmall)
 
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Text("正多角形の内角")
+        // 行列変換の適用
+        MatrixTransformationCanvas(angle, scaleX, scaleY)
 
-        // 辺の数のスライダー
-        Slider(value = sides.toFloat(), onValueChange = { sides = it.toInt() }, valueRange = 3f..10f, steps = 7, modifier = Modifier.fillMaxWidth())
-        Text("辺の数: $sides")
+        // スライダーで角度変更
+        Text("回転角: ${angle.toInt()}°")
+        Slider(
+            value = angle,
+            onValueChange = { angle = it },
+            valueRange = 0f..360f
+        )
 
-        // 内角の表示
-        Text("内角: $interiorAngle°")
+        // スケール変更
+        Text("X軸のスケール: $scaleX")
+        Slider(
+            value = scaleX,
+            onValueChange = { scaleX = it },
+            valueRange = 0.5f..2f
+        )
 
-        // 正多角形の描画
-        Canvas(modifier = Modifier.fillMaxSize().height(300.dp)) {
-            val width = size.width
-            val height = size.height
-            val centerX = width / 2
-            val centerY = height / 2
-            val radius = 100f
-            val angleStep = 360f / sides
-            val path = Path().apply {
-                moveTo(centerX + radius, centerY)
-                for (i in 1 until sides) {
-                    val angle = Math.toRadians(angleStep * i.toDouble()).toFloat()
-                    lineTo(centerX + radius * cos(angle.toDouble()).toFloat(), centerY + radius * sin(
-                        angle.toDouble()
-                    ).toFloat())
-                }
-                close()
-            }
-            drawPath(path, color = Color.Blue, style = Stroke(width = 2f))
-        }
+        Text("Y軸のスケール: $scaleY")
+        Slider(
+            value = scaleY,
+            onValueChange = { scaleY = it },
+            valueRange = 0.5f..2f
+        )
+    }
+}
+
+@Composable
+fun MatrixTransformationCanvas(angle: Float, scaleX: Float, scaleY: Float) {
+    Canvas(
+        modifier = Modifier.fillMaxWidth().height(300.dp)
+    ) {
+        val center = Offset(size.width / 2, size.height / 2)
+
+        // ベクトルの原点
+        val origin = Offset(center.x, center.y)
+
+        // 元のベクトル (50, 50)
+        val baseVector = Offset(50f, -50f)
+
+        // 行列変換を適用
+        val rad = Math.toRadians(angle.toDouble()) // 角度をラジアンに変換
+        val cos = Math.cos(rad).toFloat()
+        val sin = Math.sin(rad).toFloat()
+
+        // 回転とスケールを適用した新しいベクトル
+        val transformedVector = Offset(
+            x = (baseVector.x * cos - baseVector.y * sin) * scaleX,
+            y = (baseVector.x * sin + baseVector.y * cos) * scaleY
+        )
+
+        // 原点からの矢印を描画（元のベクトル）
+        drawLine(Color.Gray, origin, origin + baseVector, strokeWidth = 5f)
+
+        // 変換後のベクトルを描画（赤色）
+        drawLine(Color.Red, origin, origin + transformedVector, strokeWidth = 5f)
     }
 }
