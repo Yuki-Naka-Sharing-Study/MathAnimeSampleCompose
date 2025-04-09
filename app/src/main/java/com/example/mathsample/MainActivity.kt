@@ -8,58 +8,69 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
-import kotlin.math.cos
-import kotlin.math.sin
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            RegularPolygon()
+            ParabolaGraph()
         }
     }
 }
 
 @Composable
-fun RegularPolygon() {
-    var sides by remember { mutableIntStateOf(3) }
-
-    // 正多角形の内角の計算
-    val interiorAngle = (sides - 2) * 180f / sides
+fun ParabolaGraph() {
+    var a by remember { mutableStateOf(1f) }
+    var b by remember { mutableStateOf(0f) }
+    var c by remember { mutableStateOf(0f) }
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Text("正多角形の内角")
+        Text("放物線: y = ax² + bx + c")
 
-        // 辺の数のスライダー
-        Slider(value = sides.toFloat(), onValueChange = { sides = it.toInt() }, valueRange = 3f..10f, steps = 7, modifier = Modifier.fillMaxWidth())
-        Text("辺の数: $sides")
+        Slider(
+            value = a,
+            onValueChange = { a = it },
+            valueRange = -5f..5f,
+            steps = 10,
+            modifier = Modifier.fillMaxWidth()
+        )
+        Text("a = $a")
 
-        // 内角の表示
-        Text("内角: $interiorAngle°")
+        Slider(
+            value = b,
+            onValueChange = { b = it },
+            valueRange = -5f..5f,
+            steps = 10,
+            modifier = Modifier.fillMaxWidth()
+        )
+        Text("b = $b")
 
-        // 正多角形の描画
-        Canvas(modifier = Modifier.fillMaxSize().height(300.dp)) {
+        Slider(
+            value = c,
+            onValueChange = { c = it },
+            valueRange = -5f..5f,
+            steps = 10,
+            modifier = Modifier.fillMaxWidth()
+        )
+        Text("c = $c")
+
+        Canvas(modifier = Modifier.fillMaxWidth().height(300.dp)) {
             val width = size.width
             val height = size.height
-            val centerX = width / 2
-            val centerY = height / 2
-            val radius = 100f
-            val angleStep = 360f / sides
-            val path = Path().apply {
-                moveTo(centerX + radius, centerY)
-                for (i in 1 until sides) {
-                    val angle = Math.toRadians(angleStep * i.toDouble()).toFloat()
-                    lineTo(centerX + radius * cos(angle.toDouble()).toFloat(), centerY + radius * sin(
-                        angle.toDouble()
-                    ).toFloat())
-                }
-                close()
+            val scale = 50f // 1単位が50px
+            for (x in 0 until width.toInt()) {
+                val realX = (x - width / 2) / scale
+                val y = a * realX * realX + b * realX + c
+                val screenY = height / 2 - y * scale
+                drawCircle(
+                    color = Color.Blue,
+                    radius = 2f,
+                    center = Offset(x.toFloat(), screenY)
+                )
             }
-            drawPath(path, color = Color.Blue, style = Stroke(width = 2f))
         }
     }
 }
