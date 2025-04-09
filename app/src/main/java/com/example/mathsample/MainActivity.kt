@@ -8,58 +8,39 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
-import kotlin.math.cos
-import kotlin.math.sin
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            RegularPolygon()
+            SlopeAngleChange()
         }
     }
 }
 
 @Composable
-fun RegularPolygon() {
-    var sides by remember { mutableIntStateOf(3) }
-
-    // 正多角形の内角の計算
-    val interiorAngle = (sides - 2) * 180f / sides
+fun SlopeAngleChange() {
+    var angle by remember { mutableStateOf(45f) }
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Text("正多角形の内角")
+        Text("直線の傾き")
 
-        // 辺の数のスライダー
-        Slider(value = sides.toFloat(), onValueChange = { sides = it.toInt() }, valueRange = 3f..10f, steps = 7, modifier = Modifier.fillMaxWidth())
-        Text("辺の数: $sides")
+        // 角度のスライダー
+        Slider(value = angle, onValueChange = { angle = it }, valueRange = -90f..90f, steps = 180, modifier = Modifier.fillMaxWidth())
+        Text("角度: ${angle}°")
 
-        // 内角の表示
-        Text("内角: $interiorAngle°")
-
-        // 正多角形の描画
+        // グラフ描画
         Canvas(modifier = Modifier.fillMaxSize().height(300.dp)) {
             val width = size.width
             val height = size.height
-            val centerX = width / 2
             val centerY = height / 2
-            val radius = 100f
-            val angleStep = 360f / sides
-            val path = Path().apply {
-                moveTo(centerX + radius, centerY)
-                for (i in 1 until sides) {
-                    val angle = Math.toRadians(angleStep * i.toDouble()).toFloat()
-                    lineTo(centerX + radius * cos(angle.toDouble()).toFloat(), centerY + radius * sin(
-                        angle.toDouble()
-                    ).toFloat())
-                }
-                close()
-            }
-            drawPath(path, color = Color.Blue, style = Stroke(width = 2f))
+
+            // 傾きに基づく直線の描画
+            val slope = Math.tan(Math.toRadians(angle.toDouble())).toFloat()
+            drawLine(Color.Green, Offset(0f, centerY), Offset(width, centerY - slope * width), strokeWidth = 3f)
         }
     }
 }
