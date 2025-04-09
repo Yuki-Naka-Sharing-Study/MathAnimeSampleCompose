@@ -9,57 +9,38 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
-import kotlin.math.cos
-import kotlin.math.sin
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            RegularPolygon()
+            AreaOfRectangle()
         }
     }
 }
 
 @Composable
-fun RegularPolygon() {
-    var sides by remember { mutableIntStateOf(3) }
-
-    // 正多角形の内角の計算
-    val interiorAngle = (sides - 2) * 180f / sides
+fun AreaOfRectangle() {
+    var width by remember { mutableFloatStateOf(5f) }
+    var height by remember { mutableFloatStateOf(3f) }
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Text("正多角形の内角")
+        Text("長方形の面積: 面積 = 幅 × 高さ")
 
-        // 辺の数のスライダー
-        Slider(value = sides.toFloat(), onValueChange = { sides = it.toInt() }, valueRange = 3f..10f, steps = 7, modifier = Modifier.fillMaxWidth())
-        Text("辺の数: $sides")
+        Slider(value = width, onValueChange = { width = it }, valueRange = 1f..10f, steps = 10, modifier = Modifier.fillMaxWidth())
+        Text("幅: $width")
 
-        // 内角の表示
-        Text("内角: $interiorAngle°")
+        Slider(value = height, onValueChange = { height = it }, valueRange = 1f..10f, steps = 10, modifier = Modifier.fillMaxWidth())
+        Text("高さ: $height")
 
-        // 正多角形の描画
-        Canvas(modifier = Modifier.fillMaxSize().height(300.dp)) {
-            val width = size.width
-            val height = size.height
-            val centerX = width / 2
-            val centerY = height / 2
-            val radius = 100f
-            val angleStep = 360f / sides
-            val path = Path().apply {
-                moveTo(centerX + radius, centerY)
-                for (i in 1 until sides) {
-                    val angle = Math.toRadians(angleStep * i.toDouble()).toFloat()
-                    lineTo(centerX + radius * cos(angle.toDouble()).toFloat(), centerY + radius * sin(
-                        angle.toDouble()
-                    ).toFloat())
-                }
-                close()
-            }
-            drawPath(path, color = Color.Blue, style = Stroke(width = 2f))
+        Text("面積: ${width * height}")
+
+        Canvas(modifier = Modifier.fillMaxWidth().height(200.dp)) {
+            val widthPx = width * 30f
+            val heightPx = height * 30f
+
+            drawRect(color = Color.Green, size = androidx.compose.ui.geometry.Size(widthPx, heightPx))
         }
     }
 }
