@@ -8,58 +8,61 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
-import kotlin.math.cos
-import kotlin.math.sin
+import kotlin.math.sqrt
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            RegularPolygon()
+            PythagoreanTheorem()
         }
     }
 }
 
 @Composable
-fun RegularPolygon() {
-    var sides by remember { mutableIntStateOf(3) }
-
-    // 正多角形の内角の計算
-    val interiorAngle = (sides - 2) * 180f / sides
+fun PythagoreanTheorem() {
+    var a by remember { mutableFloatStateOf(3f) }
+    var b by remember { mutableFloatStateOf(4f) }
+    val c = sqrt(a * a + b * b)
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Text("正多角形の内角")
+        Text("ピタゴラスの定理: a² + b² = c²")
 
-        // 辺の数のスライダー
-        Slider(value = sides.toFloat(), onValueChange = { sides = it.toInt() }, valueRange = 3f..10f, steps = 7, modifier = Modifier.fillMaxWidth())
-        Text("辺の数: $sides")
+        Slider(
+            value = a,
+            onValueChange = { a = it },
+            valueRange = 1f..20f,
+            steps = 20,
+            modifier = Modifier.fillMaxWidth()
+        )
+        Text("a = $a")
 
-        // 内角の表示
-        Text("内角: $interiorAngle°")
+        Slider(
+            value = b,
+            onValueChange = { b = it },
+            valueRange = 1f..20f,
+            steps = 20,
+            modifier = Modifier.fillMaxWidth()
+        )
+        Text("b = $b")
 
-        // 正多角形の描画
-        Canvas(modifier = Modifier.fillMaxSize().height(300.dp)) {
+        Text("c (斜辺) = $c")
+
+        Canvas(modifier = Modifier.fillMaxWidth().height(300.dp)) {
             val width = size.width
             val height = size.height
-            val centerX = width / 2
-            val centerY = height / 2
-            val radius = 100f
-            val angleStep = 360f / sides
-            val path = Path().apply {
-                moveTo(centerX + radius, centerY)
-                for (i in 1 until sides) {
-                    val angle = Math.toRadians(angleStep * i.toDouble()).toFloat()
-                    lineTo(centerX + radius * cos(angle.toDouble()).toFloat(), centerY + radius * sin(
-                        angle.toDouble()
-                    ).toFloat())
-                }
-                close()
-            }
-            drawPath(path, color = Color.Blue, style = Stroke(width = 2f))
+
+            // 三角形の描画
+            val p1 = Offset(width / 2, height / 2)
+            val p2 = Offset(width / 2 + a * 10, height / 2)
+            val p3 = Offset(width / 2, height / 2 - b * 10)
+
+            drawLine(Color.Red, p1, p2, strokeWidth = 3f)
+            drawLine(Color.Green, p1, p3, strokeWidth = 3f)
+            drawLine(Color.Blue, p2, p3, strokeWidth = 3f)
         }
     }
 }
