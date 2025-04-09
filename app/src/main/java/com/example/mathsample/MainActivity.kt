@@ -3,63 +3,75 @@ package com.example.mathsample
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.unit.dp
-import kotlin.math.cos
-import kotlin.math.sin
+import androidx.compose.ui.graphics.PointMode
+import androidx.compose.ui.tooling.preview.Preview
+import com.example.mathsample.ui.theme.MathSampleTheme
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlin.random.Random
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
         setContent {
-            RegularPolygon()
+            MathSampleTheme {
+                RandomWalk()
+            }
         }
     }
 }
 
 @Composable
-fun RegularPolygon() {
-    var sides by remember { mutableIntStateOf(3) }
+fun RandomWalk() {
+    val steps = remember { mutableStateListOf(Offset(0f, 0f)) }
+    val scope = rememberCoroutineScope()
 
-    // 正多角形の内角の計算
-    val interiorAngle = (sides - 2) * 180f / sides
-
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Text("正多角形の内角")
-
-        // 辺の数のスライダー
-        Slider(value = sides.toFloat(), onValueChange = { sides = it.toInt() }, valueRange = 3f..10f, steps = 7, modifier = Modifier.fillMaxWidth())
-        Text("辺の数: $sides")
-
-        // 内角の表示
-        Text("内角: $interiorAngle°")
-
-        // 正多角形の描画
-        Canvas(modifier = Modifier.fillMaxSize().height(300.dp)) {
-            val width = size.width
-            val height = size.height
-            val centerX = width / 2
-            val centerY = height / 2
-            val radius = 100f
-            val angleStep = 360f / sides
-            val path = Path().apply {
-                moveTo(centerX + radius, centerY)
-                for (i in 1 until sides) {
-                    val angle = Math.toRadians(angleStep * i.toDouble()).toFloat()
-                    lineTo(centerX + radius * cos(angle.toDouble()).toFloat(), centerY + radius * sin(
-                        angle.toDouble()
-                    ).toFloat())
-                }
-                close()
+    LaunchedEffect(Unit) {
+        scope.launch {
+            repeat(100) { // 100ステップ移動
+                delay(100) // 100msごとに更新
+                val lastPos = steps.last()
+                val nextPos = lastPos + randomStep()
+                steps.add(nextPos)
             }
-            drawPath(path, color = Color.Blue, style = Stroke(width = 2f))
         }
     }
+
+    Canvas(modifier = Modifier.fillMaxSize()) {
+        val center = Offset(size.width / 2, size.height / 2)
+        drawPoints(
+            points = steps.map { center + it * 10f }, // 10倍拡大
+            pointMode = PointMode.Polygon,
+            color = Color.Cyan,
+            strokeWidth = 3f
+        )
+    }
+}
+
+// ランダムな移動（上・下・左・右）
+fun randomStep(): Offset {
+    return when (Random.nextInt(4)) {
+        0 -> Offset(10f, 0f)  // 右
+        1 -> Offset(-10f, 0f) // 左
+        2 -> Offset(0f, 10f)  // 下
+        else -> Offset(0f, -10f) // 上
+    }
+}
+
+@Preview
+@Composable
+fun PreviewRandomWalk() {
+    RandomWalk()
 }
