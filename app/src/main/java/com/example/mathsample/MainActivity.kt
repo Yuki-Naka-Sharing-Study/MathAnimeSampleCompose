@@ -8,58 +8,78 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
-import kotlin.math.cos
-import kotlin.math.sin
+import kotlin.random.Random
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            RegularPolygon()
+            CenterLimitTheoremVisualizer()
         }
     }
 }
 
 @Composable
-fun RegularPolygon() {
-    var sides by remember { mutableIntStateOf(3) }
-
-    // 正多角形の内角の計算
-    val interiorAngle = (sides - 2) * 180f / sides
+fun CenterLimitTheoremVisualizer() {
+    var sampleSize by remember { mutableIntStateOf(30) }  // サンプルサイズ
+    var numSamples by remember { mutableIntStateOf(1000) }  // サンプル数
+    var sampleMeans by remember { mutableStateOf(generateSampleMeans(sampleSize, numSamples)) }  // サンプル平均リスト
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Text("正多角形の内角")
+        Text("中心極限定理の可視化", style = MaterialTheme.typography.headlineMedium)
 
-        // 辺の数のスライダー
-        Slider(value = sides.toFloat(), onValueChange = { sides = it.toInt() }, valueRange = 3f..10f, steps = 7, modifier = Modifier.fillMaxWidth())
-        Text("辺の数: $sides")
+        // サンプル数のスライダー
+        Text("サンプルサイズ: $sampleSize")
+        Slider(
+            value = sampleSize.toFloat(),
+            onValueChange = {
+                sampleSize = it.toInt()
+                sampleMeans = generateSampleMeans(sampleSize, numSamples)
+            },
+            valueRange = 10f..100f
+        )
 
-        // 内角の表示
-        Text("内角: $interiorAngle°")
+        // ヒストグラムの描画
+        Canvas(modifier = Modifier.fillMaxWidth().height(300.dp)) {
+            val hist = generateHistogram(sampleMeans)
+            val maxCount = hist.maxOf { it.value }
 
-        // 正多角形の描画
-        Canvas(modifier = Modifier.fillMaxSize().height(300.dp)) {
-            val width = size.width
-            val height = size.height
-            val centerX = width / 2
-            val centerY = height / 2
-            val radius = 100f
-            val angleStep = 360f / sides
-            val path = Path().apply {
-                moveTo(centerX + radius, centerY)
-                for (i in 1 until sides) {
-                    val angle = Math.toRadians(angleStep * i.toDouble()).toFloat()
-                    lineTo(centerX + radius * cos(angle.toDouble()).toFloat(), centerY + radius * sin(
-                        angle.toDouble()
-                    ).toFloat())
-                }
-                close()
+            // ヒストグラムを描画
+            hist.forEachIndexed { index, entry ->
+                val barHeight = (entry.value.toFloat() / maxCount) * size.height
+                drawRect(
+                    color = Color.Blue,
+                    size = androidx.compose.ui.geometry.Size(10f, barHeight),
+                    topLeft = Offset(index * 12f, size.height - barHeight)
+                )
             }
-            drawPath(path, color = Color.Blue, style = Stroke(width = 2f))
         }
     }
+}
+
+// ランダムな値を使ってサンプル平均を生成
+fun generateSampleMeans(sampleSize: Int, numSamples: Int): List<Float> {
+    return List(numSamples) {
+        val sample = List(sampleSize) { Random.nextFloat() }
+        sample.average().toFloat()  // サンプル平均を計算
+    }
+}
+
+// ヒストグラムを生成
+fun generateHistogram(data: List<Float>, bins: Int = 50): List<Map.Entry<Int, Int>> {
+    val min = data.minOrNull() ?: 0f
+    val max = data.maxOrNull() ?: 1f
+    val range = max - min
+    val binWidth = range / bins
+
+    val histogram = mutableMapOf<Int, Int>()
+    data.forEach {
+        val bin = ((it - min) / binWidth).toInt()
+        histogram[bin] = histogram.getOrDefault(bin, 0) + 1
+    }
+
+    return histogram.entries.sortedBy { it.key }
 }
