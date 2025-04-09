@@ -3,63 +3,70 @@ package com.example.mathsample
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.unit.dp
-import kotlin.math.cos
+import com.example.mathsample.ui.theme.MathSampleTheme
 import kotlin.math.sin
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
         setContent {
-            RegularPolygon()
+            MathSampleTheme {
+                FourierWaveAnimation()
+            }
         }
     }
 }
 
 @Composable
-fun RegularPolygon() {
-    var sides by remember { mutableIntStateOf(3) }
+fun FourierWaveAnimation() {
+    val time = remember { Animatable(0f) }
 
-    // 正多角形の内角の計算
-    val interiorAngle = (sides - 2) * 180f / sides
+    LaunchedEffect(Unit) {
+        time.animateTo(
+            10f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(durationMillis = 5000, easing = LinearEasing),
+                repeatMode = RepeatMode.Restart
+            )
+        )
+    }
 
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Text("正多角形の内角")
+    Canvas(modifier = Modifier.fillMaxSize()) {
+        val width = size.width
+        val height = size.height
+        val centerY = height / 2
 
-        // 辺の数のスライダー
-        Slider(value = sides.toFloat(), onValueChange = { sides = it.toInt() }, valueRange = 3f..10f, steps = 7, modifier = Modifier.fillMaxWidth())
-        Text("辺の数: $sides")
+        // 波の描画
+        val path = Path()
+        for (i in 0..width.toInt()) {
+            val x = i.toFloat()
+            val t = time.value
+            val y = sin((x / width) * 2 * Math.PI + t).toFloat() +
+                    (1 / 3f) * sin((3 * x / width) * 2 * Math.PI + t).toFloat() +
+                    (1 / 5f) * sin((5 * x / width) * 2 * Math.PI + t).toFloat()
 
-        // 内角の表示
-        Text("内角: $interiorAngle°")
-
-        // 正多角形の描画
-        Canvas(modifier = Modifier.fillMaxSize().height(300.dp)) {
-            val width = size.width
-            val height = size.height
-            val centerX = width / 2
-            val centerY = height / 2
-            val radius = 100f
-            val angleStep = 360f / sides
-            val path = Path().apply {
-                moveTo(centerX + radius, centerY)
-                for (i in 1 until sides) {
-                    val angle = Math.toRadians(angleStep * i.toDouble()).toFloat()
-                    lineTo(centerX + radius * cos(angle.toDouble()).toFloat(), centerY + radius * sin(
-                        angle.toDouble()
-                    ).toFloat())
-                }
-                close()
+            if (i == 0) {
+                path.moveTo(x, centerY - y * 100)
+            } else {
+                path.lineTo(x, centerY - y * 100)
             }
-            drawPath(path, color = Color.Blue, style = Stroke(width = 2f))
         }
+        drawPath(path, Color.Blue, style = Stroke(width = 4f))
     }
 }
