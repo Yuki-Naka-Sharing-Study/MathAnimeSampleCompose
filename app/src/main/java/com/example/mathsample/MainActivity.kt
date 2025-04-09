@@ -8,58 +8,47 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
-import kotlin.math.cos
-import kotlin.math.sin
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            RegularPolygon()
+            SimilarityTransformation()
         }
     }
 }
 
 @Composable
-fun RegularPolygon() {
-    var sides by remember { mutableIntStateOf(3) }
-
-    // 正多角形の内角の計算
-    val interiorAngle = (sides - 2) * 180f / sides
+fun SimilarityTransformation() {
+    var scale by remember { mutableFloatStateOf(1f) }
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Text("正多角形の内角")
+        Text("相似変換")
 
-        // 辺の数のスライダー
-        Slider(value = sides.toFloat(), onValueChange = { sides = it.toInt() }, valueRange = 3f..10f, steps = 7, modifier = Modifier.fillMaxWidth())
-        Text("辺の数: $sides")
+        // スケールのスライダー
+        Slider(value = scale, onValueChange = { scale = it }, valueRange = 0.5f..2f, steps = 10, modifier = Modifier.fillMaxWidth())
+        Text("スケール: $scale")
 
-        // 内角の表示
-        Text("内角: $interiorAngle°")
-
-        // 正多角形の描画
+        // 図形描画
         Canvas(modifier = Modifier.fillMaxSize().height(300.dp)) {
             val width = size.width
             val height = size.height
             val centerX = width / 2
             val centerY = height / 2
-            val radius = 100f
-            val angleStep = 360f / sides
-            val path = Path().apply {
-                moveTo(centerX + radius, centerY)
-                for (i in 1 until sides) {
-                    val angle = Math.toRadians(angleStep * i.toDouble()).toFloat()
-                    lineTo(centerX + radius * cos(angle.toDouble()).toFloat(), centerY + radius * sin(
-                        angle.toDouble()
-                    ).toFloat())
-                }
-                close()
-            }
-            drawPath(path, color = Color.Blue, style = Stroke(width = 2f))
+
+
+            // 三角形の頂点を描画
+            val p1 = Offset(centerX, centerY - 100f * scale)
+            val p2 = Offset(centerX - 100f * scale, centerY + 100f * scale)
+            val p3 = Offset(centerX + 100f * scale, centerY + 100f * scale)
+
+
+            drawLine(Color.Blue, p1, p2, strokeWidth = 3f)
+            drawLine(Color.Blue, p2, p3, strokeWidth = 3f)
+            drawLine(Color.Blue, p3, p1, strokeWidth = 3f)
         }
     }
 }
